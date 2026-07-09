@@ -20,10 +20,18 @@ def _haversine_km(point_a, point_b):
     return radius_km * c
 
 
+import json
+
 def _extract_coordinates(route_geometry):
     """Normalize route geometry into a list of [longitude, latitude] coordinate pairs."""
     if not route_geometry:
         return []
+
+    if isinstance(route_geometry, str):
+        try:
+            route_geometry = json.loads(route_geometry)
+        except json.JSONDecodeError:
+            return []
 
     if isinstance(route_geometry, dict):
         if route_geometry.get("type") == "LineString":
@@ -35,6 +43,8 @@ def _extract_coordinates(route_geometry):
             features = route_geometry.get("features", [])
             if features:
                 return _extract_coordinates(features[0])
+        if "geometry" in route_geometry:
+            return _extract_coordinates(route_geometry["geometry"])
         return []
 
     if isinstance(route_geometry, list):

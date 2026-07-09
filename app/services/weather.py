@@ -1,5 +1,7 @@
 from datetime import datetime
 
+
+
 import requests
 
 WEATHER_CODE_MAP = {
@@ -26,6 +28,8 @@ WEATHER_CODE_MAP = {
 
 def _normalize_eta(eta):
     """Convert an ETA to a UTC-like ISO string accepted by Open-Meteo."""
+    if eta is None:
+        return None
     if isinstance(eta, datetime):
         return eta.strftime("%Y-%m-%dT%H:%M")
     return str(eta)
@@ -45,7 +49,7 @@ def get_weather(latitude, longitude, eta):
             "visibility",
         ],
         "forecast_days": 2,
-        "timezone": "auto",
+        "timezone": "GMT",
     }
 
     response = requests.get(url, params=params, timeout=20)
@@ -70,11 +74,29 @@ def get_weather(latitude, longitude, eta):
         }
 
     target_time = _normalize_eta(eta)
+    import datetime as dt_module
+
+    if target_time is None:
+        target_dt = dt_module.datetime.now(dt_module.timezone.utc).replace(tzinfo=None)
+    else:
+        try:
+            target_dt = datetime.fromisoformat(target_time.replace("Z", "+00:00"))
+            if target_dt.tzinfo is not None:
+                target_dt = target_dt.astimezone(dt_module.timezone.utc).replace(tzinfo=None)
+        except ValueError:
+            target_dt = dt_module.datetime.now(dt_module.timezone.utc).replace(tzinfo=None)
+
     closest_index = 0
     closest_delta = None
 
     for index, hour in enumerate(hourly_times):
-        delta = abs((datetime.fromisoformat(hour.replace("Z", "+00:00")) - datetime.fromisoformat(target_time.replace("Z", "+00:00"))).total_seconds())
+        try:
+            hour_dt = datetime.fromisoformat(hour.replace("Z", "+00:00"))
+            if hour_dt.tzinfo is not None:
+                hour_dt = hour_dt.astimezone(dt_module.timezone.utc).replace(tzinfo=None)
+        except ValueError:
+            continue
+        delta = abs((hour_dt - target_dt).total_seconds())
         if closest_delta is None or delta < closest_delta:
             closest_delta = delta
             closest_index = index
