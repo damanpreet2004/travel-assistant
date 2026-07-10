@@ -47,6 +47,8 @@ def get_weather(latitude, longitude, eta):
             "weather_code",
             "wind_speed_10m",
             "visibility",
+            "rain",
+            "showers"
         ],
         "forecast_days": 2,
         "timezone": "GMT",
@@ -62,6 +64,8 @@ def get_weather(latitude, longitude, eta):
     hourly_weather_codes = data.get("hourly", {}).get("weather_code", [])
     hourly_wind_speed = data.get("hourly", {}).get("wind_speed_10m", [])
     hourly_visibility = data.get("hourly", {}).get("visibility", [])
+    hourly_rain = data.get("hourly", {}).get("rain", [])
+    hourly_showers = data.get("hourly", {}).get("showers", [])
 
     if not hourly_times:
         return {
@@ -70,6 +74,8 @@ def get_weather(latitude, longitude, eta):
             "wind_speed": None,
             "visibility": None,
             "weather_code": None,
+            "rain": None,
+            "showers": None,
             "description": "Unavailable",
         }
 
@@ -109,6 +115,8 @@ def get_weather(latitude, longitude, eta):
         "precipitation": hourly_precipitation[closest_index] if closest_index < len(hourly_precipitation) else None,
         "wind_speed": hourly_wind_speed[closest_index] if closest_index < len(hourly_wind_speed) else None,
         "visibility": hourly_visibility[closest_index] if closest_index < len(hourly_visibility) else None,
+        "rain": hourly_rain[closest_index] if closest_index < len(hourly_rain) else None,
+        "showers": hourly_showers[closest_index] if closest_index < len(hourly_showers) else None,
         "weather_code": weather_code,
         "description": description,
     }

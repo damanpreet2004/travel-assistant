@@ -10,12 +10,15 @@ WEATHER_CODE_HAZARDS = {
     51: "Light Drizzle",
     53: "Light Drizzle",
     55: "Light Drizzle",
-    61: "Heavy Rain",
+    61: "Light Rain",
     63: "Heavy Rain",
     65: "Heavy Rain",
     71: "Snow",
     73: "Snow",
     75: "Snow",
+    80: "Light Rain",
+    81: "Light Rain",
+    82: "Heavy Rain",
     95: "Thunderstorm",
     96: "Thunderstorm",
     99: "Thunderstorm",
@@ -57,8 +60,10 @@ def _score_visibility(visibility):
 
 
 def _score_weather_code(weather_code):
-    if weather_code in {61, 63, 65}:
+    if weather_code in {65, 63, 82}:
         return 20
+    if weather_code in {61, 80, 81}:  # Light Rain
+        return 10
     if weather_code in {45, 48}:
         return 20
     if weather_code in {71, 73, 75}:
@@ -110,6 +115,8 @@ def _collect_hazards(weather):
 
     if precipitation >= RISK_THRESHOLDS["precipitation"]:
         hazards.append("Heavy Rain")
+    elif 0 < precipitation < RISK_THRESHOLDS["precipitation"]:
+        hazards.append("Light Rain")
     if wind_speed >= RISK_THRESHOLDS["wind_speed"]:
         hazards.append("Strong Wind")
     if visibility is not None and visibility <= RISK_THRESHOLDS["visibility"]:
@@ -119,12 +126,17 @@ def _collect_hazards(weather):
     if code_hazard and code_hazard not in hazards:
         hazards.append(code_hazard)
 
-    if description.lower().find("fog") != -1 and "Dense Fog" not in hazards:
+    desc_lower = description.lower()
+    if "fog" in desc_lower and "Dense Fog" not in hazards:
         hazards.append("Dense Fog")
-    if description.lower().find("snow") != -1 and "Snow" not in hazards:
+    if "snow" in desc_lower and "Snow" not in hazards:
         hazards.append("Snow")
-    if description.lower().find("thunder") != -1 and "Thunderstorm" not in hazards:
+    if "thunder" in desc_lower and "Thunderstorm" not in hazards:
         hazards.append("Thunderstorm")
+    if "light rain" in desc_lower and "Light Rain" not in hazards:
+        hazards.append("Light Rain")
+    if ("heavy rain" in desc_lower or "rain" in desc_lower) and "Light Rain" not in hazards and "Heavy Rain" not in hazards:
+        hazards.append("Heavy Rain")
 
     return hazards
 
