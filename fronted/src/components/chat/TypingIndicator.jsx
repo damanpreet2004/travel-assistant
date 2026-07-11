@@ -1,17 +1,84 @@
-export default function TypingIndicator(){
+import { useEffect, useState } from "react";
 
-    return(
+const steps = [
+    {
+        icon: "🧠",
+        text: "Understanding your request..."
+    },
+    {
+        icon: "📍",
+        text: "Finding best route..."
+    },
+    {
+        icon: "🌦",
+        text: "Checking weather..."
+    },
+    {
+        icon: "⚠",
+        text: "Analyzing travel risks..."
+    },
+    {
+        icon: "🤖",
+        text: "Generating AI recommendation..."
+    }
+];
 
-        <div className="flex justify-start mb-4">
+export default function TypingIndicator() {
 
-            <div className="bg-white border rounded-2xl px-4 py-3">
+    const [current, setCurrent] = useState(0);
 
-                Thinking...
+    useEffect(() => {
 
-            </div>
+        const timer = setInterval(() => {
+
+            setCurrent(prev => {
+
+                if (prev >= steps.length - 1)
+                    return prev;
+
+                return prev + 1;
+
+            });
+
+        }, 1000);
+
+        return () => clearInterval(timer);
+
+    }, []);
+
+    return (
+
+        <div className="space-y-3 mt-4">
+
+            {
+
+                steps.slice(0, current + 1).map((step, index) => (
+
+                    <div
+                        key={index}
+                        className="flex items-center gap-3 text-gray-700 animate-pulse"
+                    >
+
+                        <span className="text-xl">
+
+                            {step.icon}
+
+                        </span>
+
+                        <span>
+
+                            {step.text}
+
+                        </span>
+
+                    </div>
+
+                ))
+
+            }
 
         </div>
 
-    )
+    );
 
 }
