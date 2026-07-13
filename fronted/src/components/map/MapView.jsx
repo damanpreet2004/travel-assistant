@@ -215,11 +215,12 @@ export default function MapView({ geometry, riskSummary }) {
             container: mapContainer.current,
             style: "https://tiles.openfreemap.org/styles/liberty",
             center: [77.209, 28.6139],
-            zoom: 6
+            zoom: 6,
+            attributionControl: false
         });
 
-        mapInstance.addControl(new maplibregl.NavigationControl(), "top-right");
-        mapInstance.addControl(new maplibregl.FullscreenControl(), "top-right");
+        mapInstance.addControl(new maplibregl.NavigationControl(), "top-left");
+        mapInstance.addControl(new maplibregl.FullscreenControl(), "top-left");
         mapInstance.addControl(new maplibregl.ScaleControl(), "bottom-left");
 
         mapInstance.on("load", () => {

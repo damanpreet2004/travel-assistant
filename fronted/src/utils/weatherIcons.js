@@ -1,38 +1,18 @@
-export function getWeatherEmoji(weather){
+const CDN_BASE = "https://cdn.meteocons.com/3.0-next.10/svg/fill";
 
-    switch(weather){
-
-        case "Clear":
-            return "☀️";
-
-        case "Mainly Clear":
-            return "🌤";
-
-        case "Partly Cloudy":
-            return "⛅";
-
-        case "Cloudy":
-            return "☁️";
-
-        case "Rain":
-        case "Light Rain":
-            return "🌦";
-
-        case "Heavy Rain":
-            return "🌧";
-
-        case "Thunderstorm":
-            return "⛈";
-
-        case "Fog":
-            return "🌫";
-
-        case "Snow":
-            return "❄️";
-
-        default:
-            return "📍";
-
-    }
-
+export function getWeatherIconUrl(weather) {
+  const iconMap = {
+    "Clear": "clear-day",
+    "Mainly Clear": "mostly-clear-day",
+    "Partly Cloudy": "partly-cloudy-day",
+    "Cloudy": "overcast",
+    "Rain": "rain",
+    "Light Rain": "drizzle",
+    "Heavy Rain": "heavy-rain",
+    "Thunderstorm": "thunderstorms",
+    "Fog": "fog",
+    "Snow": "snow",
+  };
+  const icon = iconMap[weather] || "not-available";
+  return `${CDN_BASE}/${icon}.svg`;
 }

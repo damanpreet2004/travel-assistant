@@ -48,7 +48,7 @@ export default function TypingIndicator() {
 
     return (
 
-        <div className="space-y-3 mt-4">
+        <div className="space-y-2 mt-3">
 
             {
 
@@ -56,10 +56,10 @@ export default function TypingIndicator() {
 
                     <div
                         key={index}
-                        className="flex items-center gap-3 text-gray-700 animate-pulse"
+                        className="flex items-center gap-2.5 text-black/70 animate-pulse text-sm"
                     >
 
-                        <span className="text-xl">
+                        <span className="text-base">
 
                             {step.icon}
 

@@ -1,50 +1,22 @@
 import maplibregl from "maplibre-gl";
 
-import clearIcon from "../../assets/weather/clear.svg";
-import mainlyClearIcon from "../../assets/weather/mainly-clear.svg";
-import partlyCloudyIcon from "../../assets/weather/partly-cloudy.svg";
-import cloudyIcon from "../../assets/weather/cloudy.svg";
-import rainIcon from "../../assets/weather/rain.svg";
-import heavyRainIcon from "../../assets/weather/heavy-rain.svg";
-import thunderstormIcon from "../../assets/weather/thunderstorm.svg";
-import fogIcon from "../../assets/weather/fog.svg";
-import snowIcon from "../../assets/weather/snow.svg";
-import unknownIcon from "../../assets/weather/unknown.svg";
+const CDN_BASE = "https://cdn.meteocons.com/3.0-next.10/svg/fill";
 
-let markers = [];
-
-function removeOldMarkers() {
-  markers.forEach((marker) => {
-    marker.getPopup()?.remove();
-    marker.remove();
-  });
-  markers = [];
-}
-
-function getWeatherIcon(weather) {
-  switch (weather) {
-    case "Clear":
-      return clearIcon;
-    case "Mainly Clear":
-      return mainlyClearIcon;
-    case "Partly Cloudy":
-      return partlyCloudyIcon;
-    case "Cloudy":
-      return cloudyIcon;
-    case "Rain":
-    case "Light Rain":
-      return rainIcon;
-    case "Heavy Rain":
-      return heavyRainIcon;
-    case "Thunderstorm":
-      return thunderstormIcon;
-    case "Fog":
-      return fogIcon;
-    case "Snow":
-      return snowIcon;
-    default:
-      return unknownIcon;
-  }
+function getWeatherIconUrl(weather) {
+  const iconMap = {
+    "Clear": "clear-day",
+    "Mainly Clear": "mostly-clear-day",
+    "Partly Cloudy": "partly-cloudy-day",
+    "Cloudy": "overcast",
+    "Rain": "rain",
+    "Light Rain": "drizzle",
+    "Heavy Rain": "heavy-rain",
+    "Thunderstorm": "thunderstorms",
+    "Fog": "fog",
+    "Snow": "snow",
+  };
+  const icon = iconMap[weather] || "not-available";
+  return `${CDN_BASE}/${icon}.svg`;
 }
 
 function getRiskColor(risk) {
@@ -66,21 +38,21 @@ function getRiskColor(risk) {
 
 function createMarkerElement(iconUrl, riskColor) {
   const element = document.createElement("div");
-  element.style.position = "relative";
-  element.style.width = "46px";
-  element.style.height = "46px";
+  // element.style.position = "relative";
+  element.style.width = "45px";
+  element.style.height = "45px";
   element.style.borderRadius = "50%";
-  element.style.background = "#ffffff";
+  element.style.background = "transparent";
   element.style.boxShadow = "0 8px 20px rgba(15, 23, 42, 0.22)";
-  element.style.border = `2px solid ${riskColor.border}`;
+  // element.style.border = `1px solid ${riskColor.border}`;
   element.style.display = "flex";
   element.style.alignItems = "center";
   element.style.justifyContent = "center";
   element.style.cursor = "pointer";
-  element.style.transition = "transform 220ms ease, box-shadow 220ms ease, opacity 220ms ease";
-  element.style.opacity = "0";
-  element.style.transform = "translateY(-8px) scale(0.8)";
-  element.style.overflow = "hidden";
+  // element.style.transition = "transform 220ms ease, box-shadow 220ms ease, opacity 220ms ease";
+  // element.style.opacity = "0";
+  // element.style.transform = "translateY(-8px) scale(0.8)";
+  // element.style.overflow = "hidden";
 
   const icon = document.createElement("img");
   icon.src = iconUrl;
@@ -92,12 +64,12 @@ function createMarkerElement(iconUrl, riskColor) {
   element.appendChild(icon);
 
   element.addEventListener("mouseenter", () => {
-    element.style.transform = "translateY(-4px) scale(1.08)";
+    // element.style.transform = "translateY(-4px) scale(1.08)";
     element.style.boxShadow = "0 14px 30px rgba(15, 23, 42, 0.28)";
   });
 
   element.addEventListener("mouseleave", () => {
-    element.style.transform = "translateY(0) scale(1)";
+    // element.style.transform = "translateY(0) scale(1)";
     element.style.boxShadow = "0 8px 20px rgba(15, 23, 42, 0.22)";
   });
 
@@ -118,7 +90,7 @@ function createPopup(point, riskColor) {
           <div style="font-size:12px; color:#64748b; margin-top:2px;">${point.weather || "Unknown"}</div>
         </div>
         <div style="width:38px; height:38px; border-radius:999px; background:#f8fafc; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center;">
-          <img src="${getWeatherIcon(point.weather)}" alt="weather" style="width:24px; height:24px;" />
+          <img src="${getWeatherIconUrl(point.weather)}" alt="weather" style="width:24px; height:24px;" />
         </div>
       </div>
       <div style="display:flex; justify-content:flex-start; margin:10px 0;">
@@ -150,10 +122,10 @@ export function addWeatherMarkers(map, riskSummary) {
 
   riskSummary.forEach((point, index) => {
     const riskColor = getRiskColor(point.risk);
-    const markerElement = createMarkerElement(getWeatherIcon(point.weather), riskColor);
+    const markerElement = createMarkerElement(getWeatherIconUrl(point.weather), riskColor);
     const popup = createPopup(point, riskColor);
 
-    const marker = new maplibregl.Marker(markerElement)
+    const marker = new maplibregl.Marker({element : markerElement})
       .setLngLat([point.longitude, point.latitude])
       .setPopup(popup)
       .addTo(map);

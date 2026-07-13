@@ -5,17 +5,14 @@ export default function Message({ message }) {
     return (
 
         <div
-            className={`flex mb-4 ${
-                isUser ? "justify-end" : "justify-start"
-            }`}
-        >
-
-            <div
-                className={`max-w-[80%] rounded-2xl px-4 py-3 whitespace-pre-wrap ${
-                    isUser
-                        ? "bg-[#BA6A4C] text-white"
-                        : "bg-white border"
+            className={`flex mb-3 ${isUser ? "justify-end" : "justify-start"
                 }`}
+        >
+            <div
+                className={`max-w-[85%] rounded-2xl px-4 py-2.5 whitespace-pre-wrap text-sm leading-relaxed ${isUser
+                        ? "bg-white/20 text-black backdrop-blur-sm border border-white/10"
+                        : "bg-skyblue/20 text-black backdrop-blur-sm border border-skyblue/20"
+                    }`}
             >
                 {message.content}
             </div>
