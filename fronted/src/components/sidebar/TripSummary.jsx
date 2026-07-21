@@ -2,7 +2,7 @@ export default function TripSummary({ summary }) {
 
     if (!summary) {
         return (
-            <div className="rounded-2xl backdrop-blur-xl bg-white/10 border border-white/20 shadow-2xl px-5 py-4">
+            <div className="rounded-2xl backdrop-blur-md bg-white/10 border border-white/20 shadow-2xl px-5 py-4">
                 <p className="text-black/80 text-sm text-center">
                     Plan a trip to see details
                 </p>
@@ -12,7 +12,7 @@ export default function TripSummary({ summary }) {
 
     return (
 
-        <div className="rounded-2xl backdrop-blur-xl bg-white/10 border border-white/20 shadow-2xl px-5 py-4">
+        <div className="rounded-2xl backdrop-blur-md bg-white/10 border border-white/20 shadow-2xl px-5 py-4">
             <div className="flex justify-around items-center gap-4">
 
                 <div className="text-center">

@@ -47,7 +47,7 @@ def process_trip(
     origin: str,
     destination: str,
     departure_time: datetime,
-    interval_km: float = 25,
+    interval_km: float = 14,
 ) -> Dict[str, Any]:
     """
     Execute the full trip-planning pipeline and return a consolidated response.

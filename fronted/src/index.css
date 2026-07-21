@@ -109,3 +109,39 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+/* Custom maplibre weather popup overrides */
+.weather-popup .maplibregl-popup-content {
+  border-radius: 16px !important;
+  padding: 16px 20px 14px 16px !important;
+  box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.12) !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+.weather-popup .maplibregl-popup-close-button {
+  top: 10px !important;
+  right: 10px !important;
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #64748b !important;
+  font-size: 16px !important;
+  transition: all 0.2s ease !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.weather-popup .maplibregl-popup-close-button:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+.weather-popup .maplibregl-popup-tip {
+  border-top-color: rgba(255, 255, 255, 0.96) !important;
+}
+

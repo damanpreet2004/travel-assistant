@@ -19,7 +19,7 @@ export default function ChatWindow({
 
     return (
 
-        <div className="h-full flex flex-col rounded-2xl backdrop-blur-xl bg-white/10 border border-white/20 shadow-2xl overflow-hidden">
+        <div className="h-full flex flex-col rounded-2xl backdrop-blur-md bg-white/10 border border-white/20 shadow-2xl overflow-hidden">
             {/* Header */}
             <div className="px-5 py-4 border-b border-white/10">
                 <h2 className="text-skyblue font-semibold text-lg tracking-tight">

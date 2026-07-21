@@ -55,7 +55,7 @@ def _extract_coordinates(route_geometry):
     return []
 
 
-def sample_route(route_geometry, interval_km=15):
+def sample_route(route_geometry, interval_km=14):
     """Reduce a route geometry into evenly spaced sampled waypoints.
 
     The sampler walks the route in order, accumulates the traveled distance in

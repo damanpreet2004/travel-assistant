@@ -3,6 +3,7 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import { addWeatherMarkers } from "./WeatherMarkers";
+import { segmentRouteByRisk } from "./RiskLayer";
 
 export default function MapView({ geometry, riskSummary }) {
     const mapContainer = useRef(null);
@@ -11,6 +12,7 @@ export default function MapView({ geometry, riskSummary }) {
     const routeAnimationFrameRef = useRef(null);
     const cameraAnimationFrameRef = useRef(null);
     const cameraResetTimerRef = useRef(null);
+    const continuousAnimationRef = useRef(null);
     const mapReadyRef = useRef(false);
 
     const cancelRouteAnimation = () => {
@@ -40,11 +42,8 @@ export default function MapView({ geometry, riskSummary }) {
             mapInstance.addSource("route", {
                 type: "geojson",
                 data: {
-                    type: "Feature",
-                    geometry: {
-                        type: "LineString",
-                        coordinates: []
-                    }
+                    type: "FeatureCollection",
+                    features: []
                 }
             });
 
@@ -53,7 +52,15 @@ export default function MapView({ geometry, riskSummary }) {
                 type: "line",
                 source: "route",
                 paint: {
-                    "line-color": "#607456",
+                    "line-color": [
+                        "match",
+                        ["get", "risk"],
+                        "SAFE", "#2e7d32",
+                        "LOW", "#f9a825",
+                        "MODERATE", "#ef6c00",
+                        "HIGH", "#c62828",
+                        "#607456" // fallback
+                    ],
                     "line-width": 6,
                     "line-opacity": 0.9
                 }
@@ -69,93 +76,65 @@ export default function MapView({ geometry, riskSummary }) {
 
         createRouteLayer();
 
-        const feature = {
-            type: "Feature",
-            geometry: {
-                type: "LineString",
-                coordinates
-            }
+        const geojsonData = segmentRouteByRisk(coordinates, riskSummary);
+
+        mapInstance.getSource("route").setData(geojsonData);
+    };
+
+    const stopContinuousAnimation = () => {
+        if (continuousAnimationRef.current) {
+            cancelAnimationFrame(continuousAnimationRef.current);
+            continuousAnimationRef.current = null;
+        }
+    };
+
+    const startContinuousCameraAnimation = () => {
+        const mapInstance = map.current;
+        if (!mapInstance) return;
+
+        cancelCameraAnimation();
+        stopContinuousAnimation();
+
+        const step = () => {
+            if (!mapInstance) return;
+            const currentBearing = mapInstance.getBearing();
+            // Slowly rotate bearing for a premium dynamic showcase effect
+            mapInstance.setBearing((currentBearing + 0.05) % 360);
+            continuousAnimationRef.current = requestAnimationFrame(step);
         };
 
-        mapInstance.getSource("route").setData(feature);
+        continuousAnimationRef.current = requestAnimationFrame(step);
     };
 
     const fitRoute = (coordinates) => {
         const mapInstance = map.current;
         if (!mapInstance || !coordinates?.length) return;
 
+        // Trigger map resize first to ensure correct dimensions
+        mapInstance.resize();
+
         const bounds = coordinates.reduce(
             (accumulator, coordinate) => accumulator.extend(coordinate),
             new maplibregl.LngLatBounds(coordinates[0], coordinates[0])
         );
 
+        // Sidebar takes 400px on desktop, so pad the right side to keep the route visible on the left
+        const padding = {
+            top: 100,
+            bottom: 100,
+            left: 100,
+            right: window.innerWidth > 1024 ? 480 : 100
+        };
+
+        // Combine fitBounds, pitch, and bearing into a single conflict-free animation
         mapInstance.fitBounds(bounds, {
-            padding: 80,
-            duration: 2200,
-            pitch: 62,
-            bearing: 24,
-            maxZoom: 15,
+            padding,
+            duration: 2800,
+            pitch: 52,
+            bearing: 20,
+            maxZoom: 14,
             essential: true
         });
-    };
-
-    const animateCamera = () => {
-        const mapInstance = map.current;
-        if (!mapInstance) return;
-
-        cancelCameraAnimation();
-
-        const startBearing = mapInstance.getBearing();
-        const targetBearing = startBearing + 28;
-        const startTime = performance.now();
-        const duration = 2200;
-
-        const step = (timestamp) => {
-            const elapsed = timestamp - startTime;
-            const progress = Math.min(1, elapsed / duration);
-            const easedProgress = 1 - Math.pow(1 - progress, 3);
-            const currentBearing = startBearing + (targetBearing - startBearing) * easedProgress;
-
-            mapInstance.setBearing(currentBearing);
-            mapInstance.setPitch(62);
-
-            if (progress < 1) {
-                cameraAnimationFrameRef.current = requestAnimationFrame(step);
-            } else {
-                cameraAnimationFrameRef.current = null;
-            }
-        };
-
-        cameraAnimationFrameRef.current = requestAnimationFrame(step);
-    };
-
-    const resetCameraBearing = () => {
-        const mapInstance = map.current;
-        if (!mapInstance) return;
-
-        cancelCameraAnimation();
-
-        const startBearing = mapInstance.getBearing();
-        const startTime = performance.now();
-        const duration = 1200;
-
-        const step = (timestamp) => {
-            const elapsed = timestamp - startTime;
-            const progress = Math.min(1, elapsed / duration);
-            const easedProgress = 1 - Math.pow(1 - progress, 3);
-            const currentBearing = startBearing + (0 - startBearing) * easedProgress;
-
-            mapInstance.setBearing(currentBearing);
-            mapInstance.setPitch(62);
-
-            if (progress < 1) {
-                cameraAnimationFrameRef.current = requestAnimationFrame(step);
-            } else {
-                cameraAnimationFrameRef.current = null;
-            }
-        };
-
-        cameraAnimationFrameRef.current = requestAnimationFrame(step);
     };
 
     const renderWeatherMarkers = () => {
@@ -169,6 +148,7 @@ export default function MapView({ geometry, riskSummary }) {
 
         cancelRouteAnimation();
         cancelCameraAnimation();
+        stopContinuousAnimation();
 
         createRouteLayer();
 
@@ -182,7 +162,6 @@ export default function MapView({ geometry, riskSummary }) {
 
         mapInstance.getSource("route").setData(initialFeature);
         fitRoute(coordinates);
-        animateCamera();
 
         const duration = Math.min(1800, Math.max(1000, coordinates.length * 18));
         const startTime = performance.now();
@@ -200,7 +179,8 @@ export default function MapView({ geometry, riskSummary }) {
                 routeAnimationFrameRef.current = null;
                 renderWeatherMarkers();
                 cameraResetTimerRef.current = window.setTimeout(() => {
-                    resetCameraBearing();
+                    // Start slow rotating camera until user interacts
+                    startContinuousCameraAnimation();
                 }, 250);
             }
         };
@@ -228,11 +208,20 @@ export default function MapView({ geometry, riskSummary }) {
             createRouteLayer();
         });
 
+        // Cancel the continuous camera rotation as soon as the user physically touches the map
+        const handleUserInteraction = () => {
+            stopContinuousAnimation();
+        };
+        mapInstance.on("mousedown", handleUserInteraction);
+        mapInstance.on("touchstart", handleUserInteraction);
+        mapInstance.on("wheel", handleUserInteraction);
+
         map.current = mapInstance;
 
         return () => {
             cancelRouteAnimation();
             cancelCameraAnimation();
+            stopContinuousAnimation();
             mapInstance.remove();
             map.current = null;
         };

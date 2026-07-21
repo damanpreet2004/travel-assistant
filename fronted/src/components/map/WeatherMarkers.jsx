@@ -1,22 +1,11 @@
 import maplibregl from "maplibre-gl";
+import { getWeatherIconUrl } from "../../utils/weatherIcons";
 
-const CDN_BASE = "https://cdn.meteocons.com/3.0-next.10/svg/fill";
+let markers = [];
 
-function getWeatherIconUrl(weather) {
-  const iconMap = {
-    "Clear": "clear-day",
-    "Mainly Clear": "mostly-clear-day",
-    "Partly Cloudy": "partly-cloudy-day",
-    "Cloudy": "overcast",
-    "Rain": "rain",
-    "Light Rain": "drizzle",
-    "Heavy Rain": "heavy-rain",
-    "Thunderstorm": "thunderstorms",
-    "Fog": "fog",
-    "Snow": "snow",
-  };
-  const icon = iconMap[weather] || "not-available";
-  return `${CDN_BASE}/${icon}.svg`;
+export function removeOldMarkers() {
+  markers.forEach((marker) => marker.remove());
+  markers = [];
 }
 
 function getRiskColor(risk) {
@@ -38,40 +27,46 @@ function getRiskColor(risk) {
 
 function createMarkerElement(iconUrl, riskColor) {
   const element = document.createElement("div");
-  // element.style.position = "relative";
-  element.style.width = "45px";
-  element.style.height = "45px";
+  element.className = "weather-marker-container";
+  element.style.width = "55px";
+  element.style.height = "55px";
   element.style.borderRadius = "50%";
-  element.style.background = "transparent";
-  element.style.boxShadow = "0 8px 20px rgba(15, 23, 42, 0.22)";
-  // element.style.border = `1px solid ${riskColor.border}`;
+  element.style.background = "rgba(68, 68, 68, 0.5)";
+  element.style.backdropFilter = "blur(8px)";
+  element.style.border = `2px solid ${riskColor.border}`;
   element.style.display = "flex";
   element.style.alignItems = "center";
   element.style.justifyContent = "center";
   element.style.cursor = "pointer";
-  // element.style.transition = "transform 220ms ease, box-shadow 220ms ease, opacity 220ms ease";
-  // element.style.opacity = "0";
-  // element.style.transform = "translateY(-8px) scale(0.8)";
-  // element.style.overflow = "hidden";
+  element.style.boxShadow = "0 8px 20px rgba(15, 23, 42, 0.22)";
+
+  // Transition and initial state for dynamic scale-in/slide-in animation
+  element.style.transition = "transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 300ms ease, opacity 400ms ease, border-color 300ms ease";
+  element.style.opacity = "0";
+  element.style.transform = "translateY(-12px) scale(0.6)";
 
   const icon = document.createElement("img");
   icon.src = iconUrl;
   icon.alt = "weather icon";
-  icon.style.width = "28px";
-  icon.style.height = "28px";
+  icon.style.width = "32px";
+  icon.style.height = "32px";
   icon.style.objectFit = "contain";
+  icon.style.transition = "transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1)";
 
   element.appendChild(icon);
 
-  element.addEventListener("mouseenter", () => {
-    // element.style.transform = "translateY(-4px) scale(1.08)";
-    element.style.boxShadow = "0 14px 30px rgba(15, 23, 42, 0.28)";
-  });
+  // Add micro-animations on hover
+  // element.addEventListener("mouseenter", () => {
+  //   element.style.transform = "translateY(-4px) scale(1.12)";
+  //   element.style.boxShadow = "0 14px 30px rgba(15, 23, 42, 0.28)";
+  //   icon.style.transform = "scale(1.15) rotate(5deg)";
+  // });
 
-  element.addEventListener("mouseleave", () => {
-    // element.style.transform = "translateY(0) scale(1)";
-    element.style.boxShadow = "0 8px 20px rgba(15, 23, 42, 0.22)";
-  });
+  // element.addEventListener("mouseleave", () => {
+  //   element.style.transform = "translateY(0) scale(1)";
+  //   element.style.boxShadow = "0 8px 20px rgba(15, 23, 42, 0.22)";
+  //   icon.style.transform = "scale(1) rotate(0deg)";
+  // });
 
   return element;
 }
@@ -79,30 +74,37 @@ function createMarkerElement(iconUrl, riskColor) {
 function createPopup(point, riskColor) {
   const safeEta = point.eta ? new Date(point.eta).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—";
   const hazardList = Array.isArray(point.hazards) && point.hazards.length
-    ? point.hazards.map((hazard) => `<li>${hazard}</li>`).join("")
+    ? point.hazards.map((hazard) => `<li style="margin-bottom: 4px;">${hazard}</li>`).join("")
     : "<li>No major hazards</li>";
 
   const popupContent = `
-    <div style="min-width:220px; font-family: Inter, Arial, sans-serif; color:#1f2937;">
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px;">
+    <div style="min-width:240px; font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif; color:#1f2937; padding: 4px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:12px;">
         <div>
-          <div style="font-size:14px; font-weight:700; color:#0f172a;">${point.location || "Route stop"}</div>
-          <div style="font-size:12px; color:#64748b; margin-top:2px;">${point.weather || "Unknown"}</div>
+          <div style="font-size:15px; font-weight:700; color:#0f172a; letter-spacing: -0.01em;">${point.location || "Route stop"}</div>
+          <div style="font-size:12px; color:#64748b; margin-top:2px; font-weight: 500;">${point.weather || "Unknown"}</div>
         </div>
-        <div style="width:38px; height:38px; border-radius:999px; background:#f8fafc; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center;">
-          <img src="${getWeatherIconUrl(point.weather)}" alt="weather" style="width:24px; height:24px;" />
+        <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg, #f8fafc, #f1f5f9); border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; box-shadow: inset 0 1px 2px rgba(255,255,255,0.8);">
+          <img src="${getWeatherIconUrl(point.weather)}" alt="weather" style="width:32px; height:32px;" />
         </div>
       </div>
-      <div style="display:flex; justify-content:flex-start; margin:10px 0;">
-        <span style="padding:5px 10px; border-radius:999px; background:${riskColor.badge}; color:${riskColor.text}; font-size:12px; font-weight:700;">
+      <div style="display:flex; justify-content:flex-start; margin:12px 0 14px 0;">
+        <span style="padding:6px 12px; border-radius:8px; background:${riskColor.badge}; color:${riskColor.text}; font-size:12px; font-weight:700; border: 1px solid ${riskColor.border}22; display: inline-flex; align-items: center; gap: 6px;">
+          <span style="width: 6px; height: 6px; border-radius: 50%; background: ${riskColor.border}; display: inline-block;"></span>
           Risk: ${point.risk || "Unknown"}
         </span>
       </div>
-      <div style="font-size:13px; line-height:1.5;">
-        <div style="margin-bottom:6px;"><strong>ETA:</strong> ${safeEta}</div>
-        <div style="margin-bottom:6px;"><strong>Rain:</strong> ${point.rain ?? "—"}%</div>
-        <div style="margin-bottom:8px;"><strong>Hazards:</strong></div>
-        <ul style="margin:0; padding-left:16px; color:#475569;">${hazardList}</ul>
+      <div style="font-size:13px; line-height:1.6; border-top: 1px dashed #e2e8f0; padding-top: 12px;">
+        <div style="margin-bottom:6px; display: flex; justify-content: space-between; color: #475569;">
+          <strong>ETA:</strong> <span style="font-weight: 600; color: #0f172a;">${safeEta}</span>
+        </div>
+        <div style="margin-bottom:8px; display: flex; justify-content: space-between; color: #475569;">
+          <strong>Rain Chance:</strong> <span style="font-weight: 600; color: #0f172a;">${point.rain ?? "—"}%</span>
+        </div>
+        <div style="margin-top: 10px;">
+          <strong style="color: #0f172a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 6px;">Hazards</strong>
+          <ul style="margin:0; padding-left:16px; color:#64748b; font-size:12.5px;">${hazardList}</ul>
+        </div>
       </div>
     </div>
   `;
@@ -125,17 +127,19 @@ export function addWeatherMarkers(map, riskSummary) {
     const markerElement = createMarkerElement(getWeatherIconUrl(point.weather), riskColor);
     const popup = createPopup(point, riskColor);
 
-    const marker = new maplibregl.Marker({element : markerElement})
+    const marker = new maplibregl.Marker({ element: markerElement })
       .setLngLat([point.longitude, point.latitude])
       .setPopup(popup)
       .addTo(map);
 
     markers.push(marker);
 
+    // Staggered entry animation
     window.setTimeout(() => {
       markerElement.style.opacity = "1";
       markerElement.style.transform = "translateY(0) scale(1)";
       markerElement.style.boxShadow = "0 10px 24px rgba(15, 23, 42, 0.24)";
-    }, 180 + index * 420);
+    }, 180 + index * 120);
   });
 }
+
