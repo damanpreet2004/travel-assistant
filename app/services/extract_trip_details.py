@@ -17,7 +17,7 @@ ENV_PATH = os.path.join(BASE_DIR, ".env")
 load_dotenv(ENV_PATH)
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-MODEL_NAME = "gemini-2.5-flash"
+MODEL_NAME = "gemini-3.5-flash"
 
 # Prompt instructs Gemini to output only a JSON object.
 # today's date is injected at call-time so relative references

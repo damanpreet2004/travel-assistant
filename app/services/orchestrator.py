@@ -2,17 +2,16 @@
 Orchestrator: coordinates all services in the AI Travel Assistant pipeline.
 
 Execution order:
-  1. Geocode origin
-  2. Geocode destination
-  3. Get driving route
-  4. Sample the route into waypoints
-  5. Estimate ETA for each waypoint
-  6. Fetch weather for each waypoint
-  7. Analyze travel risk for each waypoint
-  8. Build compact route summary
-  9. Build compact risk summary
-  10. Generate AI recommendation via Gemini
-  11. Return one consolidated response
+  1. Geocode origin + destination (run concurrently — independent lookups)
+  2. Get driving route
+  3. Sample the route into waypoints
+  4. Estimate ETA for each waypoint
+  5. Fetch weather for each waypoint
+  6. Analyze travel risk for each waypoint
+  7. Build compact route summary
+  8. Build compact risk summary
+  9. Generate AI recommendation via Gemini
+  10. Return one consolidated response
 
 Each step calls the underlying service function directly — no internal HTTP
 requests are made.  This design makes every step independently testable and
@@ -21,6 +20,7 @@ where each service can become a standalone MCP Tool without changing its
 internal implementation.
 """
 
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Any, Dict
 
@@ -68,23 +68,31 @@ def process_trip(
     """
 
     # ------------------------------------------------------------------
-    # Step 1 – Geocode origin
+    # Step 1 – Geocode origin and destination concurrently.
+    # These two lookups are independent of each other, so there is no
+    # reason to pay their latency back-to-back — run them in parallel
+    # and wait for both to finish.
     # ------------------------------------------------------------------
-    origin_location = geocode(origin)
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        origin_future = executor.submit(geocode, origin)
+        destination_future = executor.submit(geocode, destination)
+
+        # .result() blocks until that specific future is done, but since
+        # both were already submitted above, they run concurrently — this
+        # just waits for whichever finishes second.
+        origin_location = origin_future.result()
+        destination_location = destination_future.result()
+
     if origin_location is None:
         raise TripProcessingError(f"Could not geocode origin: {origin!r}", step="geocode_origin")
 
-    # ------------------------------------------------------------------
-    # Step 2 – Geocode destination
-    # ------------------------------------------------------------------
-    destination_location = geocode(destination)
     if destination_location is None:
         raise TripProcessingError(
             f"Could not geocode destination: {destination!r}", step="geocode_destination"
         )
 
     # ------------------------------------------------------------------
-    # Step 3 – Get driving route
+    # Step 2 – Get driving route
     # ------------------------------------------------------------------
     route_data = get_route(origin_location, destination_location)
 
@@ -93,12 +101,12 @@ def process_trip(
         raise TripProcessingError(warning, step="routing")
 
     # ------------------------------------------------------------------
-    # Step 4 – Sample the route into evenly-spaced waypoints
+    # Step 3 – Sample the route into evenly-spaced waypoints
     # ------------------------------------------------------------------
     sampled_points = sample_route(route_data, interval_km=interval_km)
 
     # ------------------------------------------------------------------
-    # Step 5 – Estimate ETA for each sampled waypoint
+    # Step 4 – Estimate ETA for each sampled waypoint
     # ------------------------------------------------------------------
     points_with_eta = estimate_eta(
         sample_points=sampled_points,
@@ -108,27 +116,27 @@ def process_trip(
     )
 
     # ------------------------------------------------------------------
-    # Step 6 – Fetch weather for each waypoint
+    # Step 5 – Fetch weather for each waypoint (single batched call)
     # ------------------------------------------------------------------
     points_with_weather = get_weather_for_route(points_with_eta)
 
     # ------------------------------------------------------------------
-    # Step 7 – Analyze travel risk for each waypoint
+    # Step 6 – Analyze travel risk for each waypoint
     # ------------------------------------------------------------------
     points_with_risk = analyze_route_risk(points_with_weather)
 
     # ------------------------------------------------------------------
-    # Step 8 – Build compact route summary (strips raw geometry)
+    # Step 7 – Build compact route summary (strips raw geometry)
     # ------------------------------------------------------------------
     route_summary = build_route_summary(route_data, origin=origin, destination=destination)
 
     # ------------------------------------------------------------------
-    # Step 9 – Build compact risk summary (strips raw weather payloads)
+    # Step 8 – Build compact risk summary (strips raw weather payloads)
     # ------------------------------------------------------------------
     risk_summary = build_risk_summary(points_with_risk)
 
     # ------------------------------------------------------------------
-    # Step 10 – Generate AI recommendation using Gemini
+    # Step 9 – Generate AI recommendation using Gemini
     # ------------------------------------------------------------------
     recommendation = generate_recommendation(
         user_query=user_query,
@@ -137,7 +145,7 @@ def process_trip(
     )
 
     # ------------------------------------------------------------------
-    # Step 11 – Return consolidated response
+    # Step 10 – Return consolidated response
     # ------------------------------------------------------------------
     return {
         "route_summary": route_summary,

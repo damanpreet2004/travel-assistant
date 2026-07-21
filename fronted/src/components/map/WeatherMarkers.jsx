@@ -31,19 +31,19 @@ function createMarkerElement(iconUrl, riskColor) {
   element.style.width = "55px";
   element.style.height = "55px";
   element.style.borderRadius = "50%";
-  element.style.background = "rgba(68, 68, 68, 0.5)";
-  element.style.backdropFilter = "blur(8px)";
+  element.style.background = "rgba(46, 46, 46, 0.2)";
+  // element.style.backdropFilter = "blur(8px)";
   element.style.border = `2px solid ${riskColor.border}`;
   element.style.display = "flex";
   element.style.alignItems = "center";
   element.style.justifyContent = "center";
   element.style.cursor = "pointer";
-  element.style.boxShadow = "0 8px 20px rgba(15, 23, 42, 0.22)";
+  element.style.boxShadow = "0 8px 20px rgba(17, 17, 17, 0.12)";
 
   // Transition and initial state for dynamic scale-in/slide-in animation
   element.style.transition = "transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 300ms ease, opacity 400ms ease, border-color 300ms ease";
   element.style.opacity = "0";
-  element.style.transform = "translateY(-12px) scale(0.6)";
+  // element.style.transform = "translateY(-12px) scale(0.6)";
 
   const icon = document.createElement("img");
   icon.src = iconUrl;
