@@ -192,12 +192,37 @@ export default function MapView({ geometry, riskSummary }) {
         if (map.current) return;
 
         const mapInstance = new maplibregl.Map({
-            container: mapContainer.current,
-            style: "https://tiles.openfreemap.org/styles/liberty",
-            center: [77.209, 28.6139],
-            zoom: 6,
-            attributionControl: false
-        });
+    container: mapContainer.current,
+    style: "https://tiles.openfreemap.org/styles/liberty",
+    center: [76.7794, 30.7333], // Chandigarh coordinates [lng, lat]
+    zoom: 14,                  // Zoomed in closer
+    pitch: 85,                 // Maximum pitch
+    bearing: 0,
+    attributionControl: false
+});
+
+mapInstance.on('load', () => {
+    let isRotating = true;
+
+    // Function to handle continuous rotation
+    function rotateCamera(timestamp) {
+        if (isRotating) {
+            mapInstance.rotateTo((timestamp / 400) % 360, { duration: 0 });
+        }
+        requestAnimationFrame(rotateCamera);
+    }
+    requestAnimationFrame(rotateCamera);
+
+    // Stop rotation on any user touch/mouse interaction
+    const stopRotation = () => {
+        isRotating = false;
+    };
+
+    mapInstance.on('mousedown', stopRotation);
+    mapInstance.on('touchstart', stopRotation);
+    mapInstance.on('dragstart', stopRotation);
+    mapInstance.on('zoomstart', stopRotation);
+});
 
         mapInstance.addControl(new maplibregl.NavigationControl(), "top-left");
         mapInstance.addControl(new maplibregl.FullscreenControl(), "top-left");
