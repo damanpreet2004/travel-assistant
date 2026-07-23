@@ -4,8 +4,8 @@ export default function WeatherPopup({ point }) {
 
     return (
 
-        <div className="min-w-[220px]">
-            <div className="flex items-center gap-3 mb-2">
+        <div className="min-w-[250px]">
+            <div className="flex items-center gap-3 mb-3">
                 <img
                     src={getWeatherIconUrl(point.weather)}
                     alt={point.weather}

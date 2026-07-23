@@ -70,6 +70,6 @@ def get_route(origin, destination):
 
     return {
         "distance_km": round(summary.get("distance", 0) / 1000, 2),
-        "duration_min": round((summary.get("duration", 0) / 60) / 0.8, 2),
+        "duration_min": round((summary.get("duration", 0) / 60) / 0.75, 2),
         "geometry": feature.get("geometry", {}),
     }

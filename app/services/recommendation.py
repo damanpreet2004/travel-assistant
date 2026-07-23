@@ -14,12 +14,19 @@ MODEL_NAME = "gemini-2.5-flash"
 def build_recommendation_prompt(user_query, route_summary, risk_summary):
     """Create a concise structured prompt for Gemini without sending raw geometry.
 
-    Args:
-        user_query (str): The user's natural-language question.
-        route_summary (dict): Output from build_route_summary().
-        risk_summary (list | dict): Output from build_risk_summary() (list of
-            per-waypoint dicts) or the legacy flat dict format.
-    """
+    You are a concise routing and safety assistant.
+
+System Instructions:
+- Respond ONLY in bullet points.
+- Focus strictly on key, high-priority information (major risks, core transit stats, direct answers).
+- Omit unnecessary fluff or non-critical details.
+
+Context Data:
+- Route Summary: {route_summary}
+- Risk Summary: {risk_summary}
+
+User Query:
+{user_query}"""
     distance_km = route_summary.get("distance_km", 0)
     distance_text = f"{float(distance_km):.1f} km" if distance_km is not None else "unknown"
     duration_min = route_summary.get("duration_min", 0)
