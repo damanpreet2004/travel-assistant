@@ -160,35 +160,35 @@ function createPopup(point, riskColor) {
     : "<li>No major hazards</li>";
 
   const popupContent = `
-    <div style="min-width:260px; font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif; color:#1f2937; padding: 4px;">
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:12px;">
-        <div>
-          <div style="font-size:15px; font-weight:700; color:#0f172a; letter-spacing: -0.01em;">${point.location || "Route stop"}</div>
-          <div style="font-size:12px; color:#64748b; margin-top:2px; font-weight: 500;">${point.weather || "Unknown"}</div>
-        </div>
-        <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg, #f8fafc, #f1f5f9); border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; box-shadow: inset 0 1px 2px rgba(255,255,255,0.8);">
-          <img src="${getWeatherIconUrl(point.weather)}" alt="weather" style="width:32px; height:32px;" />
-        </div>
-      </div>
-      <div style="display:flex; justify-content:flex-start; margin:12px 0 14px 0;">
-        <span style="padding:6px 12px; border-radius:8px; background:${riskColor.badge}; color:${riskColor.text}; font-size:12px; font-weight:700; border: 1px solid ${riskColor.border}22; display: inline-flex; align-items: center; gap: 6px;">
-          <span style="width: 6px; height: 6px; border-radius: 50%; background: ${riskColor.border}; display: inline-block;"></span>
-          Risk: ${point.risk || "Unknown"}
-        </span>
-      </div>
-      <div style="font-size:13px; line-height:1.6; border-top: 1px dashed #e2e8f0; padding-top: 12px;">
-        <div style="margin-bottom:6px; display: flex; justify-content: space-between; color: #475569;">
-          <strong>ETA:</strong> <span style="font-weight: 600; color: #0f172a;">${safeEta}</span>
-        </div>
-        <div style="margin-bottom:8px; display: flex; justify-content: space-between; color: #475569;">
-          <strong>Rain Chance:</strong> <span style="font-weight: 600; color: #0f172a;">${point.rain ?? "—"}%</span>
-        </div>
-        <div style="margin-top: 10px;">
-          <strong style="color: #0f172a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 6px;">Hazards</strong>
-          <ul style="margin:0; padding-left:16px; color:#64748b; font-size:12.5px;">${hazardList}</ul>
-        </div>
-      </div>
+    <div style="width: 260px; max-width: 100%; box-sizing: border-box; font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif; color:#1f2937;">
+  <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:12px;">
+    <div>
+      <div style="font-size:15px; font-weight:700; color:#0f172a; letter-spacing: -0.01em;">${point.location || "Route stop"}</div>
+      <div style="font-size:12px; color:#64748b; margin-top:2px; font-weight: 500;">${point.weather || "Unknown"}</div>
     </div>
+    <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg, #f8fafc, #f1f5f9); border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; box-shadow: inset 0 1px 2px rgba(255,255,255,0.8); flex-shrink: 0;">
+      <img src="${getWeatherIconUrl(point.weather)}" alt="weather" style="width:32px; height:32px;" />
+    </div>
+  </div>
+  <div style="display:flex; justify-content:flex-start; margin:12px 0 14px 0;">
+    <span style="padding:6px 12px; border-radius:8px; background:${riskColor.badge}; color:${riskColor.text}; font-size:12px; font-weight:700; border: 1px solid ${riskColor.border}22; display: inline-flex; align-items: center; gap: 6px;">
+      <span style="width: 6px; height: 6px; border-radius: 50%; background: ${riskColor.border}; display: inline-block;"></span>
+      Risk: ${point.risk || "Unknown"}
+    </span>
+  </div>
+  <div style="font-size:13px; line-height:1.6; border-top: 1px dashed #e2e8f0; padding-top: 12px;">
+    <div style="margin-bottom:6px; display: flex; justify-content: space-between; color: #475569;">
+      <strong>ETA:</strong> <span style="font-weight: 600; color: #0f172a;">${safeEta}</span>
+    </div>
+    <div style="margin-bottom:8px; display: flex; justify-content: space-between; color: #475569;">
+      <strong>Rain Chance:</strong> <span style="font-weight: 600; color: #0f172a;">${point.rain ?? "—"}%</span>
+    </div>
+    <div style="margin-top: 10px;">
+      <strong style="color: #0f172a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 6px;">Hazards</strong>
+      <ul style="margin:0; padding-left:16px; color:#64748b; font-size:12.5px;">${hazardList}</ul>
+    </div>
+  </div>
+</div>
   `;
 
   return new maplibregl.Popup({

@@ -8,7 +8,7 @@ ENV_PATH = os.path.join(BASE_DIR, ".env")
 load_dotenv(ENV_PATH)
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-MODEL_NAME = "gemini-2.5-flash"
+MODEL_NAME = "gemini-3.5-flash"
 
 
 def build_recommendation_prompt(user_query, route_summary, risk_summary):
@@ -16,17 +16,17 @@ def build_recommendation_prompt(user_query, route_summary, risk_summary):
 
     You are a concise routing and safety assistant.
 
-System Instructions:
-- Respond ONLY in bullet points.
-- Focus strictly on key, high-priority information (major risks, core transit stats, direct answers).
-- Omit unnecessary fluff or non-critical details.
+    System Instructions:
+    - Respond ONLY in bullet points.
+    - Focus strictly on key, high-priority information (major risks, core transit stats, direct answers).
+    - Omit unnecessary fluff or non-critical details.
 
-Context Data:
-- Route Summary: {route_summary}
-- Risk Summary: {risk_summary}
+    Context Data:
+    - Route Summary: {route_summary}
+    - Risk Summary: {risk_summary}
 
-User Query:
-{user_query}"""
+    User Query:
+    {user_query}"""
     distance_km = route_summary.get("distance_km", 0)
     distance_text = f"{float(distance_km):.1f} km" if distance_km is not None else "unknown"
     duration_min = route_summary.get("duration_min", 0)
@@ -90,7 +90,7 @@ User Query:
         f"Overall risk level: {risk_level}\n"
         f"Hazards: {hazards_text}\n"
         f"Weather description: {weather_description}\n"
-        "Write a brief travel recommendation in 150-250 words. "
+        "Write a brief travel recommendation under 50 words. "
         "Summarize the journey, explain hazardous locations, recommend safe driving precautions, mention high-risk segments, and say whether delaying departure may help if severe weather exists."
     )
 
