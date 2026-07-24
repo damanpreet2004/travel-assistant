@@ -34,6 +34,9 @@ from app.services.summary import build_route_summary, build_risk_summary
 from app.services.recommendation import generate_recommendation
 
 
+from app.services.risk_timeline import compute_risk_timeline
+
+
 class TripProcessingError(Exception):
     """Raised when the orchestrator cannot complete the pipeline."""
 
@@ -60,8 +63,8 @@ def process_trip(
         interval_km:    Sampling interval in km for route waypoints (default 25).
 
     Returns:
-        A dict containing route_summary, risk_summary, recommendation,
-        and route_geometry.
+        A dict containing route_summary, risk_summary, risk_timeline, best_departure,
+        recommendation, and route_geometry.
 
     Raises:
         TripProcessingError: If any required step in the pipeline fails.
@@ -69,17 +72,11 @@ def process_trip(
 
     # ------------------------------------------------------------------
     # Step 1 – Geocode origin and destination concurrently.
-    # These two lookups are independent of each other, so there is no
-    # reason to pay their latency back-to-back — run them in parallel
-    # and wait for both to finish.
     # ------------------------------------------------------------------
     with ThreadPoolExecutor(max_workers=2) as executor:
         origin_future = executor.submit(geocode, origin)
         destination_future = executor.submit(geocode, destination)
 
-        # .result() blocks until that specific future is done, but since
-        # both were already submitted above, they run concurrently — this
-        # just waits for whichever finishes second.
         origin_location = origin_future.result()
         destination_location = destination_future.result()
 
@@ -106,50 +103,58 @@ def process_trip(
     sampled_points = sample_route(route_data, interval_km=interval_km)
 
     # ------------------------------------------------------------------
-    # Step 4 – Estimate ETA for each sampled waypoint
+    # Step 4 – Compute Risk Timeline across departure hours (+0h to +24h)
     # ------------------------------------------------------------------
-    points_with_eta = estimate_eta(
+    timeline_result = compute_risk_timeline(
         sample_points=sampled_points,
         total_distance_km=route_data["distance_km"],
         total_duration_min=route_data["duration_min"],
-        departure_time=departure_time,
+        base_departure_time=departure_time,
+        max_hours=24,
+        step_hours=1,
     )
 
-    # ------------------------------------------------------------------
-    # Step 5 – Fetch weather for each waypoint (single batched call)
-    # ------------------------------------------------------------------
-    points_with_weather = get_weather_for_route(points_with_eta)
+    risk_timeline = timeline_result.get("timeline", [])
+    best_departure = timeline_result.get("best_departure")
+
+    # The base (+0h) risk summary is the first entry in the timeline
+    if risk_timeline and "risk_summary" in risk_timeline[0]:
+        risk_summary = risk_timeline[0]["risk_summary"]
+    else:
+        # Fallback if timeline is empty
+        points_with_eta = estimate_eta(
+            sample_points=sampled_points,
+            total_distance_km=route_data["distance_km"],
+            total_duration_min=route_data["duration_min"],
+            departure_time=departure_time,
+        )
+        points_with_weather = get_weather_for_route(points_with_eta)
+        points_with_risk = analyze_route_risk(points_with_weather)
+        risk_summary = build_risk_summary(points_with_risk)
 
     # ------------------------------------------------------------------
-    # Step 6 – Analyze travel risk for each waypoint
-    # ------------------------------------------------------------------
-    points_with_risk = analyze_route_risk(points_with_weather)
-
-    # ------------------------------------------------------------------
-    # Step 7 – Build compact route summary (strips raw geometry)
+    # Step 5 – Build compact route summary (strips raw geometry)
     # ------------------------------------------------------------------
     route_summary = build_route_summary(route_data, origin=origin, destination=destination)
 
     # ------------------------------------------------------------------
-    # Step 8 – Build compact risk summary (strips raw weather payloads)
-    # ------------------------------------------------------------------
-    risk_summary = build_risk_summary(points_with_risk)
-
-    # ------------------------------------------------------------------
-    # Step 9 – Generate AI recommendation using Gemini
+    # Step 6 – Generate AI recommendation using Gemini
     # ------------------------------------------------------------------
     recommendation = generate_recommendation(
         user_query=user_query,
         route_summary=route_summary,
         risk_summary=risk_summary,
+        best_departure=best_departure,
     )
 
     # ------------------------------------------------------------------
-    # Step 10 – Return consolidated response
+    # Step 7 – Return consolidated response
     # ------------------------------------------------------------------
     return {
         "route_summary": route_summary,
         "risk_summary": risk_summary,
+        "risk_timeline": risk_timeline,
+        "best_departure": best_departure,
         "recommendation": recommendation,
         "route_geometry": route_data.get("geometry"),
     }

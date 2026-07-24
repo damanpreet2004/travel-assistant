@@ -11,22 +11,8 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 MODEL_NAME = "gemini-3.5-flash"
 
 
-def build_recommendation_prompt(user_query, route_summary, risk_summary):
-    """Create a concise structured prompt for Gemini without sending raw geometry.
-
-    You are a concise routing and safety assistant.
-
-    System Instructions:
-    - Respond ONLY in bullet points.
-    - Focus strictly on key, high-priority information (major risks, core transit stats, direct answers).
-    - Omit unnecessary fluff or non-critical details.
-
-    Context Data:
-    - Route Summary: {route_summary}
-    - Risk Summary: {risk_summary}
-
-    User Query:
-    {user_query}"""
+def build_recommendation_prompt(user_query, route_summary, risk_summary, best_departure=None):
+    """Create a concise structured prompt for Gemini without sending raw geometry."""
     distance_km = route_summary.get("distance_km", 0)
     distance_text = f"{float(distance_km):.1f} km" if distance_km is not None else "unknown"
     duration_min = route_summary.get("duration_min", 0)
@@ -81,6 +67,10 @@ def build_recommendation_prompt(user_query, route_summary, risk_summary):
 
     hazards_text = ", ".join(hazards) if hazards else "None"
 
+    best_dep_text = ""
+    if best_departure and isinstance(best_departure, dict):
+        best_dep_text = f"Departure Timing Insight: {best_departure.get('reason', '')}\n"
+
     return (
         "You are a concise travel safety assistant. "
         f"User query: {user_query}\n"
@@ -90,10 +80,10 @@ def build_recommendation_prompt(user_query, route_summary, risk_summary):
         f"Overall risk level: {risk_level}\n"
         f"Hazards: {hazards_text}\n"
         f"Weather description: {weather_description}\n"
+        f"{best_dep_text}"
         "Write a brief travel recommendation under 50 words. "
-        "Summarize the journey, explain hazardous locations, recommend safe driving precautions, mention high-risk segments, and say whether delaying departure may help if severe weather exists."
+        "Summarize the journey, explain hazardous locations, recommend safe driving precautions, mention high-risk segments, and advise on optimal departure timing."
     )
-
 
 
 def _call_gemini_model(prompt):
@@ -114,9 +104,9 @@ def _call_gemini_model(prompt):
     return getattr(response, "text", "") or ""
 
 
-def generate_recommendation(user_query, route_summary, risk_summary):
+def generate_recommendation(user_query, route_summary, risk_summary, best_departure=None):
     """Generate a concise AI recommendation from route and risk context."""
-    prompt = build_recommendation_prompt(user_query, route_summary, risk_summary)
+    prompt = build_recommendation_prompt(user_query, route_summary, risk_summary, best_departure)
 
     try:
         recommendation_text = _call_gemini_model(prompt)

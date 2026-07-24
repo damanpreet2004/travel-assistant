@@ -271,9 +271,14 @@ mapInstance.on('load', () => {
 
     useEffect(() => {
         if (!map.current || !riskSummary?.length) return;
-        if (routeAnimationFrameRef.current) return;
 
+        // Update markers for current riskSummary
         renderWeatherMarkers();
+
+        // Re-segment and re-color route line live
+        if (geometry?.coordinates?.length) {
+            updateRoute(geometry.coordinates);
+        }
     }, [riskSummary]);
 
     return <div ref={mapContainer} className="w-full h-full" />;

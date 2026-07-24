@@ -114,14 +114,10 @@ def _extract_at_index(hourly, index):
     }
 
 
-def get_weather_for_route(sample_points, forecast_days=2):
+def fetch_hourly_weather_batch(sample_points, forecast_days=3):
     """
-    Attach weather information to each sampled route point using a SINGLE
-    batched Open-Meteo request instead of one request per point.
-
-    Open-Meteo accepts comma-separated latitude/longitude lists and returns
-    a JSON array of results in the same order as the input coordinates:
-    https://open-meteo.com/en/docs -> "multiple locations"
+    Fetch raw hourly forecast blocks for each sample point coordinate in a single batch request.
+    Returns a list of hourly dicts corresponding 1-to-1 with sample_points.
     """
     if not sample_points:
         return []
@@ -143,19 +139,25 @@ def get_weather_for_route(sample_points, forecast_days=2):
         response.raise_for_status()
         data = response.json()
     except Exception:
-        # Whole batch failed (network/timeout/etc) -> mark every point
-        # unavailable rather than raising, matching prior per-point behavior.
-        return [
-            {**point, "weather": dict(_EMPTY_WEATHER)} for point in sample_points
-        ]
+        return [{} for _ in sample_points]
 
-    # With multiple locations, Open-Meteo returns a top-level JSON array;
-    # with a single location it returns a single object. Normalize to a list.
     results = data if isinstance(data, list) else [data]
+    return [(loc or {}).get("hourly", {}) for loc in results]
+
+
+def get_weather_for_route(sample_points, forecast_days=3, hourly_batch=None):
+    """
+    Attach weather information to each sampled route point using batched Open-Meteo forecast data.
+    If hourly_batch is provided, reuses existing forecast data without making an HTTP request.
+    """
+    if not sample_points:
+        return []
+
+    if hourly_batch is None:
+        hourly_batch = fetch_hourly_weather_batch(sample_points, forecast_days=forecast_days)
 
     enriched_points = []
-    for point, location_result in zip(sample_points, results):
-        hourly = (location_result or {}).get("hourly", {})
+    for point, hourly in zip(sample_points, hourly_batch):
         target_dt = _to_utc_naive(_normalize_eta(point.get("eta")))
         hourly_times = hourly.get("time", [])
 

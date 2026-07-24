@@ -150,5 +150,31 @@ def create_recommendation(payload: dict):
     user_query = payload.get("user_query", "Give me travel recommendations.")
     route_summary = payload.get("route_summary", {})
     risk_summary = payload.get("risk_summary", {})
+    best_departure = payload.get("best_departure")
     
-    return generate_recommendation(user_query, route_summary, risk_summary)
+    return generate_recommendation(user_query, route_summary, risk_summary, best_departure)
+
+
+@router.post("/timeline")
+def create_timeline(payload: dict):
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="Request body must be a JSON object")
+
+    sample_points = payload.get("sample_points") or payload.get("samples") or payload.get("points")
+    if not sample_points:
+        raise HTTPException(status_code=400, detail="sample_points is required")
+
+    total_distance_km = payload.get("total_distance_km", 0)
+    total_duration_min = payload.get("total_duration_min", 0)
+    departure_time = _parse_departure_time(payload.get("departure_time"))
+    max_hours = payload.get("max_hours", 24)
+
+    from app.services.risk_timeline import compute_risk_timeline
+    return compute_risk_timeline(
+        sample_points=sample_points,
+        total_distance_km=total_distance_km,
+        total_duration_min=total_duration_min,
+        base_departure_time=departure_time,
+        max_hours=max_hours,
+        step_hours=1,
+    )
