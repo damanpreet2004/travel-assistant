@@ -4,6 +4,7 @@ import MapView from "../components/map/MapView";
 import ChatWindow from "../components/chat/ChatWindow";
 import TripSummary from "../components/sidebar/TripSummary";
 import RiskTimeSlider from "../components/map/RiskTimeSlider";
+import GoldenWindowBanner from "../components/map/GoldenWindowBanner";
 
 import { sendMessage } from "../api/chatApi";
 
@@ -19,6 +20,7 @@ export default function Home() {
     const [riskSummary, setRiskSummary] = useState([]);
     const [riskTimeline, setRiskTimeline] = useState([]);
     const [bestDeparture, setBestDeparture] = useState(null);
+    const [goldenWindow, setGoldenWindow] = useState(null);
     const [selectedOffset, setSelectedOffset] = useState(0);
     const [summary, setSummary] = useState(null);
 
@@ -39,6 +41,7 @@ export default function Home() {
             setRiskSummary(result.risk_summary || []);
             setRiskTimeline(result.risk_timeline || []);
             setBestDeparture(result.best_departure || null);
+            setGoldenWindow(result.golden_window || null);
             setSelectedOffset(0);
 
             setMessages(prev => [
@@ -70,6 +73,19 @@ export default function Home() {
                 />
             </div>
 
+            {/* Golden Window Banner — appears above slider when detected */}
+            {goldenWindow?.detected && (
+                <div className="absolute bottom-[210px] left-6 z-20 pointer-events-auto">
+                    <GoldenWindowBanner
+                        goldenWindow={goldenWindow}
+                        onApply={() => {
+                            // Snap slider to nearest whole-hour offset of the golden window
+                            setSelectedOffset(Math.round(goldenWindow.offset_hours));
+                        }}
+                    />
+                </div>
+            )}
+
             {/* Floating Risk Over Time Slider overlay at bottom left */}
             {riskTimeline.length > 0 && (
                 <div className="absolute bottom-6 left-6 z-20 pointer-events-auto">
@@ -78,6 +94,7 @@ export default function Home() {
                         selectedOffset={selectedOffset}
                         onChangeOffset={setSelectedOffset}
                         bestDeparture={bestDeparture}
+                        goldenWindow={goldenWindow}
                     />
                 </div>
             )}
@@ -100,4 +117,4 @@ export default function Home() {
             </div>
         </div>
     );
-}
+}

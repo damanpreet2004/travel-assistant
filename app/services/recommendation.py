@@ -11,7 +11,7 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 MODEL_NAME = "gemini-3.5-flash"
 
 
-def build_recommendation_prompt(user_query, route_summary, risk_summary, best_departure=None):
+def build_recommendation_prompt(user_query, route_summary, risk_summary, best_departure=None, golden_window=None):
     """Create a concise structured prompt for Gemini without sending raw geometry."""
     distance_km = route_summary.get("distance_km", 0)
     distance_text = f"{float(distance_km):.1f} km" if distance_km is not None else "unknown"
@@ -71,6 +71,16 @@ def build_recommendation_prompt(user_query, route_summary, risk_summary, best_de
     if best_departure and isinstance(best_departure, dict):
         best_dep_text = f"Departure Timing Insight: {best_departure.get('reason', '')}\n"
 
+    golden_window_text = ""
+    if golden_window and isinstance(golden_window, dict) and golden_window.get("detected"):
+        golden_window_text = (
+            f"Golden Window Alert: {golden_window.get('headline', '')} "
+            f"Current risk: {golden_window.get('initial_risk')} ({golden_window.get('initial_score')} pts). "
+            f"If departing {golden_window.get('time_desc')} later (at {golden_window.get('formatted_time')}): "
+            f"{golden_window.get('new_risk')} ({golden_window.get('new_score')} pts). "
+            f"Risk score reduction: {golden_window.get('score_reduction')} pts.\n"
+        )
+
     return (
         "You are a concise travel safety assistant. "
         f"User query: {user_query}\n"
@@ -81,8 +91,10 @@ def build_recommendation_prompt(user_query, route_summary, risk_summary, best_de
         f"Hazards: {hazards_text}\n"
         f"Weather description: {weather_description}\n"
         f"{best_dep_text}"
-        "Write a brief travel recommendation under 50 words. "
-        "Summarize the journey, explain hazardous locations, recommend safe driving precautions, mention high-risk segments, and advise on optimal departure timing."
+        f"{golden_window_text}"
+        "Write a brief travel recommendation under 60 words. "
+        "Summarize the journey, explain hazardous locations, recommend safe driving precautions, mention high-risk segments. "
+        "IMPORTANT: If a Golden Window Alert is present, explicitly mention it as your primary advice — e.g. 'Risk drops to LOW if you leave 45 min later.'"
     )
 
 
@@ -104,9 +116,9 @@ def _call_gemini_model(prompt):
     return getattr(response, "text", "") or ""
 
 
-def generate_recommendation(user_query, route_summary, risk_summary, best_departure=None):
+def generate_recommendation(user_query, route_summary, risk_summary, best_departure=None, golden_window=None):
     """Generate a concise AI recommendation from route and risk context."""
-    prompt = build_recommendation_prompt(user_query, route_summary, risk_summary, best_departure)
+    prompt = build_recommendation_prompt(user_query, route_summary, risk_summary, best_departure, golden_window)
 
     try:
         recommendation_text = _call_gemini_model(prompt)

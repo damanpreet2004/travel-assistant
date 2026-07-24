@@ -116,6 +116,7 @@ def process_trip(
 
     risk_timeline = timeline_result.get("timeline", [])
     best_departure = timeline_result.get("best_departure")
+    golden_window = timeline_result.get("golden_window")
 
     # The base (+0h) risk summary is the first entry in the timeline
     if risk_timeline and "risk_summary" in risk_timeline[0]:
@@ -145,6 +146,7 @@ def process_trip(
         route_summary=route_summary,
         risk_summary=risk_summary,
         best_departure=best_departure,
+        golden_window=golden_window,
     )
 
     # ------------------------------------------------------------------
@@ -155,6 +157,7 @@ def process_trip(
         "risk_summary": risk_summary,
         "risk_timeline": risk_timeline,
         "best_departure": best_departure,
+        "golden_window": golden_window,
         "recommendation": recommendation,
         "route_geometry": route_data.get("geometry"),
     }

@@ -6,6 +6,7 @@ export default function RiskTimeSlider({
     selectedOffset = 0,
     onChangeOffset,
     bestDeparture = null,
+    goldenWindow = null,
 }) {
     const [isPlaying, setIsPlaying] = useState(false);
 
@@ -170,6 +171,18 @@ export default function RiskTimeSlider({
                         );
                     })}
                 </div>
+                {/* Golden window pin marker */}
+                {goldenWindow?.detected && (
+                    <div
+                        className="absolute -top-1 flex flex-col items-center pointer-events-none"
+                        style={{
+                            left: `${Math.min((goldenWindow.offset_hours / Math.max(riskTimeline.length - 1, 1)) * 100, 100)}%`,
+                            transform: "translateX(-50%)"
+                        }}
+                    >
+                        <span className="text-amber-400 drop-shadow text-base leading-none" title={goldenWindow.headline}>⭐</span>
+                    </div>
+                )}
             </div>
 
             {/* Range Slider & Controls */}
